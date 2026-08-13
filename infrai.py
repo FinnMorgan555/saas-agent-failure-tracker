@@ -37,8 +37,9 @@ def _post(path: str, payload: dict) -> dict:
             time.sleep(delay)
             continue
 
-        response.raise_for_status()
         envelope = response.json()
+        if response.status_code >= 500:
+            response.raise_for_status()
         if not envelope.get("ok"):
             raise RuntimeError(str(envelope.get("error") or "Infrai request was rejected"))
         return envelope.get("data", {})
