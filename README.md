@@ -1,39 +1,39 @@
 # Track SaaS agent failures with Python
 
-When your agent calls customer systems, you want an audit trail the moment a step raises. This small example posts the captured traceback to Infrai with one explicit REST request. Infrai gives you one key for logs, metrics, and this error recorder, so you don't spin up a second error-service credential. A single `INFRAI_API_KEY` keeps the error recorder alongside the rest of an agent's Infrai usage.
+When your agent calls into customer systems, you want an audit trail the moment a step blows up. This small example ships the captured traceback to Infrai with one plain REST request. A single ``INFRAI_API_KEY`` keeps the error recorder next to the rest of your agent's Infrai usage, so you're not wiring up a second error-service credential.
 
-`track_step()` re-raises on purpose after it records the exception. Your loop keeps its own retry, escalation, or user-response policy. This helper just makes the event visible.
+``track_step()`` re-raises on purpose after it logs the exception. Your loop keeps its own retry, escalation, or user-response logic. This helper just makes the failure visible.
 
 ## Run it
 
-```bash
+````bash
 pip install -r requirements.txt
 export INFRAI_API_KEY=your_key
 python agent_loop.py
-```
+````
 
 Expected result:
 
-```text
+````text
 Agent exception recorded in Infrai.
-```
+````
 
 ## The pattern
 
-The client sends an explicit `POST /v1/errors/capture` request with the exception payload. It reads Infrai's `{ok, data, error, metadata}` envelope before it treats a submission as done. If the service says slow down, the same request identity stays across exponential retries. A `Retry-After` value wins when you pass one.
+The client fires an explicit ``POST /v1/errors/capture`` request carrying the exception payload. It reads Infrai's ``{ok, data, error, metadata}`` envelope before it counts a submission as done. If the service says slow down, the same request identity sticks across exponential retries. A ``Retry-After`` value wins when you pass one.
 
-The only change in an existing loop is to pass the callable for one tool or model-adjacent step:
+To drop this into an existing loop, just hand it the callable for one tool or model-adjacent step:
 
-```python
+````python
 result = track_step(lambda: run_account_lookup(account_id))
-```
+````
 
-Keep the wrapper near the loop boundary. That way a captured traceback holds the call stack you actually need. `agent_loop.py` uses a local stand-in function just to exercise the path. Swap in your real step in production.
+Keep the wrapper near the loop boundary. That way a captured traceback holds the call stack you actually care about. ``agent_loop.py`` uses a local stand-in purely to exercise the path. Swap in your real step when you ship.
 
 ## Files
 
-- `infrai.py` holds the small HTTP client and the `infrai.errors.capture` idiom.
-- `agent_loop.py` is the wrapper that records and re-raises each exception.
+- ``infrai.py`` holds the tiny HTTP client and the ``infrai.errors.capture`` idiom.
+- ``agent_loop.py`` is the wrapper that records and re-raises each exception.
 
 ## License
 
